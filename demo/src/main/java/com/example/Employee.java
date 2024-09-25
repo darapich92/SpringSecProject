@@ -24,18 +24,21 @@ public class Employee {
     private String username;
 
     private String password;
+    
+    private String role;
 
     // No-arg constructor for Hibernate
     protected Employee() {
     }
 
     // Constructor with fields
-    public Employee(String firstName, String lastName, LocalDate dateOfBirth, String username, String password) {
+    public Employee(String firstName, String lastName, LocalDate dateOfBirth, String username, String password, String role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
         this.username=username;
         this.password=password;
+        this.role = role;
     }
 
     // Getters
@@ -63,6 +66,10 @@ public class Employee {
         return password;
     }
 
+    public String getRole() {
+        return role;
+    }
+
     // Setters
     public void setFirstName(String firstName) {
         this.firstName = firstName;
@@ -82,6 +89,10 @@ public class Employee {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
 
