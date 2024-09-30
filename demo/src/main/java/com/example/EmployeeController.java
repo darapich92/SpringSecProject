@@ -14,10 +14,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Objects;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-@RestController
+@Controller
 public class EmployeeController {
 
     private final EmployeeRepository employeeRepository;
@@ -98,11 +105,45 @@ public class EmployeeController {
 
         // If the username and password are correct, you can return a success message or
         // a token (e.g., JWT)
-        if (accessPermission(username)) {
+        if (accessAuthentication(username)) {
             return ResponseEntity.ok("Login successful");
-        }else{
+        } else {
             return ResponseEntity.ok("Login unsuccessful");
         }
+
+    }
+
+    @GetMapping("/")
+    public String getIndex(Model model, Authentication auth) {
+        model.addAttribute(
+            "name",
+            auth instanceof OAuth2AuthenticationToken oauth && oauth.getPrincipal() instanceof OidcUser oidc ? 
+                oidc.getPreferredUsername() : 
+                "");
+        model.addAttribute("isAuthenticated", auth != null && auth.isAuthenticated());
+        model.addAttribute("isNice", auth != null && auth.getAuthorities().stream().anyMatch(authority -> Objects.equals("NICE", authority.getAuthority())));
+        return "index.html";
+    }
+
+    @GetMapping("/nice")
+    public String getNice(Model model, Authentication auth) {
+        return "nice.html";
+    }
+
+    private boolean accessAuthentication(String username) {
+
+        Employee employee = employeeRepository.findByUsername(username);
+        String role = employee.getRole();
+
+        logger.info(role);
+        // Check access permission using OPA
+        boolean isAdminAllowed = opaService.isAllowed("GET", "/some/path", role);
+        boolean isEditorAllowed = opaService.isAllowed("POST", "/some/path", "editor");
+
+        System.out.println("Admin Access: " + isAdminAllowed); 
+        System.out.println("Editor Access: " + isEditorAllowed);
+
+        return opaService.isAllowed("GET", "/employees", role);
 
     }
 
@@ -113,7 +154,13 @@ public class EmployeeController {
 
         logger.info(role);
         // Check access permission using OPA
-        return opaService.isAllowed("GET", "/employees", role);
+        boolean isAdminAllowed = opaService.isAllowed("GET", "/some/path", role);
+        boolean isEditorAllowed = opaService.isAllowed("POST", "/some/path", "editor");
+
+        System.out.println("Admin Access: " + isAdminAllowed); 
+        System.out.println("Editor Access: " + isEditorAllowed);
+
+        return opaService.isAllowed("GET", "/employees", "viewer");
 
     }
 
