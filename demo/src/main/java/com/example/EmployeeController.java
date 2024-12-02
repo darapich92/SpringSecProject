@@ -3,6 +3,7 @@ package com.example;
 import org.slf4j.LoggerFactory;
 import org.apache.el.stream.Optional;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,8 +15,27 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Controller;
@@ -38,6 +58,9 @@ public class EmployeeController {
         this.passwordEncoder = passwordEncoder;
         this.opaService = opaService;
     }
+
+    @Autowired
+    private OAuth2AuthorizedClientService authorizedClientService;
 
     @GetMapping("/employees")
     public Iterable<Employee> findAllEmployees() {
@@ -105,62 +128,121 @@ public class EmployeeController {
 
         // If the username and password are correct, you can return a success message or
         // a token (e.g., JWT)
-        if (accessAuthentication(username)) {
-            return ResponseEntity.ok("Login successful");
-        } else {
-            return ResponseEntity.ok("Login unsuccessful");
-        }
+        // if (accessPermission(username)) {
+        // return ResponseEntity.ok("Login successful");
+        // } else {
+        // return ResponseEntity.ok("Login unsuccessful");
+        // }
+
+        return ResponseEntity.ok("Login successful");
 
     }
 
     @GetMapping("/")
     public String getIndex(Model model, Authentication auth) {
-        model.addAttribute(
-            "name",
-            auth instanceof OAuth2AuthenticationToken oauth && oauth.getPrincipal() instanceof OidcUser oidc ? 
-                oidc.getPreferredUsername() : 
-                "");
-        model.addAttribute("isAuthenticated", auth != null && auth.isAuthenticated());
-        model.addAttribute("isNice", auth != null && auth.getAuthorities().stream().anyMatch(authority -> Objects.equals("NICE", authority.getAuthority())));
+        if (auth instanceof OAuth2AuthenticationToken oauth && oauth.getPrincipal() instanceof OidcUser oidc) {
+            // Extract username
+            String username = oidc.getPreferredUsername();
+
+            // Retrieve the access token
+            OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                    oauth.getAuthorizedClientRegistrationId(),
+                    oauth.getName());
+
+            String accessToken = client.getAccessToken().getTokenValue();
+
+            List<String> roles = extractRoleFromAccessToken(accessToken);
+            String location = extractLocationFromAccessToken(accessToken);
+
+            // Add data to the model
+            model.addAttribute("name", username);
+            model.addAttribute("accessToken", accessToken);
+            model.addAttribute("isAuthenticated", auth.isAuthenticated());
+
+            accessPermission(roles,location);
+
+            logger.info("Username: " + username);
+            logger.info("Access Token: " + accessToken);
+            logger.info("Roles: " + roles);
+            logger.info("Location: " + location);
+        } else {
+            model.addAttribute("name", "");
+            model.addAttribute("accessToken", "");
+            model.addAttribute("isAuthenticated", false);
+        }
+
         return "index.html";
+    }
+
+    // Helper method to extract roles
+    private List<String> extractRoleFromAccessToken(String accessToken) {
+        try {
+            String[] parts = accessToken.split("\\.");
+            String payload = new String(Base64.getDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+            // Parse the payload as a JSON object
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(payload);
+
+            // Extract roles from resource_access
+            JsonNode resourceAccessNode = jsonNode.get("resource_access");
+            if (resourceAccessNode != null) {
+                JsonNode clientRolesNode = resourceAccessNode.get("login-app"); // Replace "your-client-id"
+                if (clientRolesNode != null) {
+                    JsonNode rolesNode = clientRolesNode.get("roles");
+                    if (rolesNode != null && rolesNode.isArray()) {
+                        List<String> roles = new ArrayList<>();
+                        rolesNode.forEach(roleNode -> roles.add(roleNode.asText()));
+                        return roles;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to parse roles from access token", e);
+        }
+        return List.of(); // Return an empty list if roles cannot be extracted
+    }
+
+    // Helper method to extract roles
+    private String extractLocationFromAccessToken(String accessToken) {
+
+        String location = "";
+        try {
+            String[] parts = accessToken.split("\\.");
+            String payload = new String(Base64.getDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+            // Parse the payload as a JSON object
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(payload);
+
+            // Extract roles from resource_access
+            JsonNode locationNode = jsonNode.get("location");
+            if (locationNode != null) {
+                location = locationNode.asText();
+                System.out.println("Location: " + location);
+            } else {
+                System.out.println("Location claim is missing in the token.");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to parse roles from access token", e);
+        }
+        return location; // Return an empty list if roles cannot be extracted
     }
 
     @GetMapping("/nice")
     public String getNice(Model model, Authentication auth) {
+
         return "nice.html";
     }
 
-    private boolean accessAuthentication(String username) {
+    private boolean accessPermission(List<String> role, String location) {
 
-        Employee employee = employeeRepository.findByUsername(username);
-        String role = employee.getRole();
-
-        logger.info(role);
         // Check access permission using OPA
-        boolean isAdminAllowed = opaService.isAllowed("GET", "/some/path", role);
-        boolean isEditorAllowed = opaService.isAllowed("POST", "/some/path", "editor");
+        boolean isAllowed = opaService.isAllowed("GET", role, location);
 
-        System.out.println("Admin Access: " + isAdminAllowed); 
-        System.out.println("Editor Access: " + isEditorAllowed);
+        System.out.println("Admin Access: " + isAllowed);
 
-        return opaService.isAllowed("GET", "/employees", role);
-
-    }
-
-    private boolean accessPermission(String username) {
-
-        Employee employee = employeeRepository.findByUsername(username);
-        String role = employee.getRole();
-
-        logger.info(role);
-        // Check access permission using OPA
-        boolean isAdminAllowed = opaService.isAllowed("GET", "/some/path", role);
-        boolean isEditorAllowed = opaService.isAllowed("POST", "/some/path", "editor");
-
-        System.out.println("Admin Access: " + isAdminAllowed); 
-        System.out.println("Editor Access: " + isEditorAllowed);
-
-        return opaService.isAllowed("GET", "/employees", "viewer");
+        return isAllowed;
 
     }
 

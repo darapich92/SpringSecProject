@@ -1,6 +1,7 @@
 package com.example;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -17,12 +18,13 @@ public class OpaService {
         this.restTemplate = restTemplateBuilder.build();
     }
 
-    public boolean isAllowed(String method, String path, String role) {
+    public boolean isAllowed(String method, List<String> role, String location) {
         String opaUrl = "http://localhost:8181/v1/data/example/authz/allow";
         Map<String, Object> request = new HashMap<>();
         Map<String, Object> input = new HashMap<>();
         input.put("method", method);
         input.put("role", role);
+        input.put("location", location);
         request.put("input", input);
 
         System.out.println("here is input" + input);
