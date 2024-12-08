@@ -1,0 +1,9 @@
+com/example/MvcConfig.class
+com/example/keycloakAdmin/KeycloakUserCreator.class
+com/example/EmployeeRepository.class
+com/example/EmployeeController.class
+com/example/Employee.class
+com/example/WebSecurityConfig.class
+com/example/WebSecurityConfig$AuthoritiesConverter.class
+com/example/OpaService.class
+com/example/Main.class
