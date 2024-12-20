@@ -33,7 +33,7 @@ After executing above command, readers can access to http://localhost:80 for log
   # access to policies folder
   cd ../demo/src/main/resources/policies/ 
   # run service
-  ./opa run --server accessPolicy.rego
+  opa run --server accessPolicy.rego
 We made a simple access policy based on the role and region of the access. For viewing the whole content of the policy, please access to `accessPolicy.rego` .
 - Execute Front-End:
     ```bash
