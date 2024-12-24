@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+//improve OPA service
 @Service
 public class OpaService {
     private final RestTemplate restTemplate;
@@ -29,15 +30,25 @@ public class OpaService {
 
         System.out.println("here is input" + input);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(opaUrl, request, Map.class);
-        if (response.getStatusCode() == HttpStatus.OK) {
-            Map<String, Object> result = response.getBody();
-            System.out.println("Response from OPA: " + result); // Log response
-            return result != null && (Boolean) result.get("result");
+        ResponseEntity<OpaResponse> response = restTemplate.postForEntity(opaUrl, request, OpaResponse.class);
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            return response.getBody().getResult();
         } else {
             // Handle error response
             System.out.println("Error response from OPA: " + response.getStatusCode());
             return false; // or handle accordingly
+        }
+    }
+
+    public class OpaResponse {
+        private Boolean result;
+    
+        public Boolean getResult() {
+            return result;
+        }
+    
+        public void setResult(Boolean result) {
+            this.result = result;
         }
     }
 }

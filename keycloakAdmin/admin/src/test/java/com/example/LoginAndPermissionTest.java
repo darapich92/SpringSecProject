@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 public class LoginAndPermissionTest {
-    private static final String KEYCLOAK_URL = "http://localhost:80/realms/Spring_App/protocol/openid-connect/token";
+    private static final String KEYCLOAK_URL = "http://localhost:2020/realms/Spring_App/protocol/openid-connect/token";
     private static final String PERMISSION_CHECK_URL = "http://localhost:8181/v1/data/example/authz/allow";
 
     private static final int THREAD_COUNT = 200; // Number of concurrent users
@@ -130,7 +130,7 @@ public class LoginAndPermissionTest {
                     // Extract and process the response
                     Map<String, Object> result = response.getBody();
                     if (result != null && result.get("result") instanceof Boolean) {
-                        System.out.println("Response for user " + user.getUsername() + ": " + result);
+                        // System.out.println("Response for user " + user.getUsername() + ": " + result);
                         return String.valueOf(result.get("result")); // Convert Boolean to String
                     } else {
                         i++;

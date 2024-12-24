@@ -17,7 +17,7 @@ import java.util.Random;
 
 import javax.annotation.PostConstruct;
 
-@Component
+// @Component
 public class KeycloakUserCreator {
 
     @Value("${keycloak.auth-server-url}")

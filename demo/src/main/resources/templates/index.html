@@ -19,14 +19,12 @@
 		
 		<div th:if="${!isAuthenticated}">
 			<p>Please login</p>
-			<a href="/oauth2/authorization/keycloak"><button type="button"
+			<a href="http://localhost:8082/oauth2/authorization/keycloak"><button type="button"
 					class="btn btn-lg btn-primary btn-block">Login</button></a>
 		</div>
 		<div th:if="${isAuthenticated}">
 			<p>Hi <span th:utext="${name}">..!..</span>!</p>
 			<a href="/logout"><button type="button" class="btn btn-lg btn-primary">Logout</button></a>
-			<a th:if="${isNice}" href="/nice"><button type="button" class="btn btn-lg btn-primary">Browse to NICE users
-					page</button></a>
 		</div>
 	</div>
 </body>

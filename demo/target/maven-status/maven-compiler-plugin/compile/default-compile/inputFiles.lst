@@ -1,8 +1,4 @@
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/OpaService.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/EmployeeRepository.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/Employee.java
 /Users/dara/Documents/SpringApp/demo/src/main/java/com/example/Main.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/MvcConfig.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/WebSecurityConfig.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/EmployeeController.java
-/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/keycloakAdmin/KeycloakUserCreator.java
+/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/AppConfig.java
+/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/FrontendService.java
+/Users/dara/Documents/SpringApp/demo/src/main/java/com/example/FrontendController.java
